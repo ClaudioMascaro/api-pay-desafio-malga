@@ -1,27 +1,31 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { CircuitBreakerService } from '../../circuit-breaker/circuit-breaker.service';
 import {
   CreatePaymentDto,
-  CreatePaymentResponse,
+  PaymentResponse,
   PaymentStatus,
-} from '../dto/create-payment.dto';
+  RefundPaymentDto,
+} from '../dto/payments.dto';
 import {
   Provider2CreatePaymentDto,
-  Provider2CreatePaymentResponse,
+  Provider2PaymentResponse,
 } from './dto/provider2.dto';
 import { lastValueFrom } from 'rxjs';
 import PaymentProviderStrategy from './payment-provider.interface';
 import CircuitBreaker from 'opossum';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class Provider2Strategy implements PaymentProviderStrategy {
+  private apiUrl = this.configService.get<string>('payments.provider2.apiUrl');
+  private requestTimeout = this.configService.get<number>(
+    'payments.requestTimeout',
+  );
+
   private readonly logger = new Logger(Provider2Strategy.name);
-  private circuitBreaker: CircuitBreaker<
-    [CreatePaymentDto],
-    CreatePaymentResponse
-  >;
+  private circuitBreaker: CircuitBreaker<[CreatePaymentDto], PaymentResponse>;
 
   private statusDictionary: { [key: string]: PaymentStatus } = {
     paid: 'success',
@@ -36,13 +40,13 @@ export class Provider2Strategy implements PaymentProviderStrategy {
   ) {
     this.circuitBreaker = this.circuitBreakerService.createCircuitBreaker<
       [CreatePaymentDto],
-      CreatePaymentResponse
+      PaymentResponse
     >(async (dto) => this.executeRequest(dto));
   }
 
   async processPayment(
     createPaymentDto: CreatePaymentDto,
-  ): Promise<CreatePaymentResponse> {
+  ): Promise<PaymentResponse> {
     try {
       return await this.circuitBreaker.fire(createPaymentDto);
     } catch (error) {
@@ -53,9 +57,7 @@ export class Provider2Strategy implements PaymentProviderStrategy {
 
   private async executeRequest(
     createPaymentDto: CreatePaymentDto,
-  ): Promise<CreatePaymentResponse> {
-    const apiUrl = this.configService.get<string>('payments.provider2.apiUrl');
-
+  ): Promise<PaymentResponse> {
     const expirationArr =
       createPaymentDto.paymentMethod.card.expirationDate.split('/');
 
@@ -77,10 +79,10 @@ export class Provider2Strategy implements PaymentProviderStrategy {
     };
 
     const response = await lastValueFrom(
-      this.httpService.post<Provider2CreatePaymentResponse>(
-        apiUrl + '/transactions',
+      this.httpService.post<Provider2PaymentResponse>(
+        this.apiUrl + '/transactions',
         provider2CreatePaymentDto,
-        { timeout: 1000 },
+        { timeout: this.requestTimeout },
       ),
     );
 
@@ -100,7 +102,83 @@ export class Provider2Strategy implements PaymentProviderStrategy {
       description: data.statementDescriptor,
       paymentMethod: 'card',
       cardId: data.cardId,
-      provider: 'provider2',
     };
+  }
+
+  async findPaymentById(id: string): Promise<PaymentResponse> {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.get<Provider2PaymentResponse>(
+          this.apiUrl + '/transactions/' + id,
+          { timeout: this.requestTimeout },
+        ),
+      );
+
+      const { data } = response;
+
+      return {
+        id: data.id,
+        createdDate: data.date,
+        status: this.statusDictionary[data.status],
+        amount: data.amount,
+        originalAmount: data.originalAmount,
+        currency: data.currency,
+        description: data.statementDescriptor,
+        paymentMethod: 'card',
+        cardId: data.cardId,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async refundPayment(
+    id: string,
+    { amount }: RefundPaymentDto,
+  ): Promise<PaymentResponse> {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.post<Provider2PaymentResponse>(
+          this.apiUrl + '/void/' + id,
+          { amount },
+          { timeout: this.requestTimeout },
+        ),
+      );
+
+      const { data } = response;
+
+      return {
+        id: data.id,
+        createdDate: data.date,
+        status: this.statusDictionary[data.status],
+        amount: data.amount,
+        originalAmount: data.originalAmount,
+        currency: data.currency,
+        description: data.statementDescriptor,
+        paymentMethod: 'card',
+        cardId: data.cardId,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axiosError.status === 404 || axiosError.status >= 500) {
+        throw axiosError;
+      }
+
+      if (axiosError.status === 400) {
+        const data = axiosError.response.data as any;
+
+        if (data.message === 'Transaction cannot be voided.') {
+          throw new BadRequestException('Payment cannot be refunded');
+        }
+
+        if (data.message === 'Void amount is higher than transaction amount.') {
+          throw new BadRequestException(
+            'Refund amount is greater than payment amount',
+          );
+        }
+      }
+
+      throw error;
+    }
   }
 }

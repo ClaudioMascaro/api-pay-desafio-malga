@@ -11,6 +11,7 @@ export class ZodValidationPipe implements PipeTransform {
   transform(value: unknown, metadata: ArgumentMetadata) {
     try {
       const parsedValue = this.schema.parse(value);
+
       return parsedValue;
     } catch (error) {
       if (error.errors) {

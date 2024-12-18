@@ -1,70 +1,181 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
-import { ZodValidationPipe } from '../../common/validation/pipeline.validation';
 import {
   CreatePaymentDto,
-  CreatePaymentSchema,
-} from './dto/create-payment.dto';
-import request from 'supertest';
-import { INestApplication } from '@nestjs/common';
+  PaymentResponse,
+  RefundPaymentDto,
+} from './dto/payments.dto';
 
 describe('PaymentsController', () => {
-  let app: INestApplication;
-  let paymentsService = { processPayment: jest.fn() };
+  let paymentsController: PaymentsController;
+  let paymentsService: jest.Mocked<PaymentsService>;
 
-  beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
+  beforeEach(async () => {
+    const mockPaymentsService = {
+      processPayment: jest.fn(),
+      refundPayment: jest.fn(),
+      findPaymentById: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [PaymentsController],
       providers: [
         {
           provide: PaymentsService,
-          useValue: paymentsService,
+          useValue: mockPaymentsService,
         },
       ],
     }).compile();
 
-    app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ZodValidationPipe(CreatePaymentSchema));
-    await app.init();
+    paymentsController = module.get<PaymentsController>(PaymentsController);
+    paymentsService = module.get(PaymentsService);
   });
 
-  it(`/POST /payments (valid data)`, () => {
-    const createPaymentDto: CreatePaymentDto = {
-      amount: 1000,
-      currency: 'USD',
-      description: 'Compra de produtos',
-      paymentMethod: {
-        type: 'card',
-        card: {
-          number: '4111111111111111',
-          holderName: 'John Doe',
-          cvv: '123',
-          expirationDate: '12/2025',
-          installments: 3,
+  describe('processPayment', () => {
+    it('should call processPayment and return the result', async () => {
+      const mockCreatePaymentDto: CreatePaymentDto = {
+        amount: 100,
+        currency: 'USD',
+        description: 'Test Payment',
+        paymentMethod: {
+          type: 'card',
+          card: {
+            number: '4111111111111111',
+            holderName: 'John Doe',
+            cvv: '123',
+            expirationDate: '12/2025',
+            installments: 1,
+          },
         },
-      },
-    };
+      };
+      const mockResult: PaymentResponse = {
+        id: 'payment-id',
+        createdDate: '2021-09-01T00:00:00.000Z',
+        originalAmount: 100,
+        amount: 100,
+        currency: 'USD',
+        description: 'Test Payment',
+        status: 'success',
+        paymentMethod: 'card',
+        cardId: 'card-id',
+      };
 
-    paymentsService.processPayment.mockResolvedValue({ success: true });
+      paymentsService.processPayment.mockResolvedValue(mockResult);
 
-    return request(app.getHttpServer())
-      .post('/payments')
-      .send(createPaymentDto)
-      .expect(201)
-      .expect({ success: true });
+      const result =
+        await paymentsController.processPayment(mockCreatePaymentDto);
+
+      expect(paymentsService.processPayment).toHaveBeenCalledWith(
+        mockCreatePaymentDto,
+      );
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw an error if processPayment fails', async () => {
+      const mockCreatePaymentDto: CreatePaymentDto = {
+        amount: 100,
+        currency: 'USD',
+        description: 'Test Payment',
+        paymentMethod: {
+          type: 'card',
+          card: {
+            number: '4111111111111111',
+            holderName: 'John Doe',
+            cvv: '123',
+            expirationDate: '12/2025',
+            installments: 1,
+          },
+        },
+      };
+
+      paymentsService.processPayment.mockRejectedValue(
+        new Error('Payment processing failed'),
+      );
+
+      await expect(
+        paymentsController.processPayment(mockCreatePaymentDto),
+      ).rejects.toThrow('Payment processing failed');
+    });
   });
 
-  it(`/POST /payments (invalid data)`, () => {
-    const invalidCreatePaymentDto = {};
+  describe('refundPayment', () => {
+    it('should call refundPayment and return the result', async () => {
+      const mockRefundPaymentDto: RefundPaymentDto = { amount: 50 };
+      const mockId = 'refund-id';
+      const mockResult: PaymentResponse = {
+        id: 'refund-id',
+        createdDate: '2021-09-01T00:00:00.000Z',
+        originalAmount: 50,
+        amount: 50,
+        currency: 'USD',
+        description: 'Refund Payment',
+        status: 'refunded',
+        paymentMethod: 'card',
+        cardId: 'card-id',
+      };
 
-    return request(app.getHttpServer())
-      .post('/payments')
-      .send(invalidCreatePaymentDto)
-      .expect(400);
+      paymentsService.refundPayment.mockResolvedValue(mockResult);
+
+      const result = await paymentsController.refundPayment(
+        mockRefundPaymentDto,
+        mockId,
+      );
+
+      expect(paymentsService.refundPayment).toHaveBeenCalledWith(
+        mockId,
+        mockRefundPaymentDto,
+      );
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw an error if refundPayment fails', async () => {
+      const mockRefundPaymentDto: RefundPaymentDto = { amount: 50 };
+      const mockId = 'payment-id';
+
+      paymentsService.refundPayment.mockRejectedValue(
+        new Error('Refund failed'),
+      );
+
+      await expect(
+        paymentsController.refundPayment(mockRefundPaymentDto, mockId),
+      ).rejects.toThrow('Refund failed');
+    });
   });
 
-  afterAll(async () => {
-    await app.close();
+  describe('findPaymentById', () => {
+    it('should call findPaymentById and return the result', async () => {
+      const mockId = 'payment-id';
+      const mockResult: PaymentResponse = {
+        id: 'payment-id',
+        createdDate: '2021-09-01T00:00:00.000Z',
+        originalAmount: 100,
+        amount: 100,
+        currency: 'USD',
+        description: 'Test Payment',
+        status: 'success',
+        paymentMethod: 'card',
+        cardId: 'card-id',
+      };
+
+      paymentsService.findPaymentById.mockResolvedValue(mockResult);
+
+      const result = await paymentsController.findPaymentById(mockId);
+
+      expect(paymentsService.findPaymentById).toHaveBeenCalledWith(mockId);
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw an error if findPaymentById fails', async () => {
+      const mockId = 'payment-id';
+
+      paymentsService.findPaymentById.mockRejectedValue(
+        new Error('Payment not found'),
+      );
+
+      await expect(paymentsController.findPaymentById(mockId)).rejects.toThrow(
+        'Payment not found',
+      );
+    });
   });
 });

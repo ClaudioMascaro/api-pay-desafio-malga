@@ -1,10 +1,14 @@
 import {
   CreatePaymentDto,
-  CreatePaymentResponse,
-} from '../dto/create-payment.dto';
+  PaymentResponse,
+  RefundPaymentDto,
+} from '../dto/payments.dto';
 
 export default interface PaymentProviderStrategy {
-  processPayment(
-    createPaymentDto: CreatePaymentDto,
-  ): Promise<CreatePaymentResponse>;
+  processPayment(createPaymentDto: CreatePaymentDto): Promise<PaymentResponse>;
+  findPaymentById(id: string): Promise<PaymentResponse>;
+  refundPayment(
+    id: string,
+    refundPaymentDto: RefundPaymentDto,
+  ): Promise<PaymentResponse>;
 }

@@ -3,7 +3,7 @@ import currencyCodes from 'currency-codes';
 
 const currencyEnum = currencyCodes.codes() as [string, ...string[]];
 
-export const CreatePaymentSchema = z.object({
+export const CreateTransactionSchema = z.object({
   amount: z.number().positive(),
   currency: z.enum(currencyEnum),
   statementDescriptor: z.string().max(255),
@@ -17,9 +17,15 @@ export const CreatePaymentSchema = z.object({
   }),
 });
 
-export type CreatePaymentDto = z.infer<typeof CreatePaymentSchema>;
+export type CreateTransactionDto = z.infer<typeof CreateTransactionSchema>;
 
-export type CreatePaymentResponse = {
+export const RefundTransactionSchema = z.object({
+  amount: z.number().positive(),
+});
+
+export type RefundTransactionDto = z.infer<typeof RefundTransactionSchema>;
+
+export type TransactionResponse = {
   id: string;
   date: string;
   status: 'paid' | 'failed' | 'voided';

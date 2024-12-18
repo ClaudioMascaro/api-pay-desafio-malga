@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import CircuitBreaker from 'opossum';
 import { CircuitBreakerService } from './circuit-breaker.service';
+import CircuitBreaker from 'opossum';
 
 describe('CircuitBreakerService', () => {
   let circuitBreakerService: CircuitBreakerService;
@@ -43,35 +43,28 @@ describe('CircuitBreakerService', () => {
       'circuitBreaker.resetTimeout',
     );
 
-    expect(typeof breaker).toBe('object');
     expect(breaker).toBeInstanceOf(CircuitBreaker);
   });
 
-  it('should register "open", "close" and "halfOpen" events', () => {
+  it('should register "open", "close", and "halfOpen" events with logger', () => {
     const requestFn = jest.fn();
     const breaker = circuitBreakerService.createCircuitBreaker(requestFn);
 
-    const openListener = jest.spyOn(console, 'warn').mockImplementation();
-    const closeListener = jest.spyOn(console, 'info').mockImplementation();
-    const halfOpenListener = jest.spyOn(console, 'info').mockImplementation();
+    const warnSpy = jest.spyOn(circuitBreakerService['logger'], 'warn');
+    const logSpy = jest.spyOn(circuitBreakerService['logger'], 'log');
 
     breaker.emit('open');
     breaker.emit('close');
     breaker.emit('halfOpen');
 
-    expect(openListener).toHaveBeenCalledWith(
-      'Circuit open - blocking new calls.',
-    );
-    expect(closeListener).toHaveBeenCalledWith(
-      'Circuit closed - calls allowed.',
-    );
-    expect(halfOpenListener).toHaveBeenCalledWith(
-      'Circuit in test - checking recovery.',
+    expect(warnSpy).toHaveBeenCalledWith('Circuit open - calls are blocked.');
+    expect(logSpy).toHaveBeenCalledWith('Circuit closed - calls are allowed.');
+    expect(logSpy).toHaveBeenCalledWith(
+      'Circuit half-open - testing if calls are allowed.',
     );
 
-    openListener.mockRestore();
-    closeListener.mockRestore();
-    halfOpenListener.mockRestore();
+    warnSpy.mockRestore();
+    logSpy.mockRestore();
   });
 
   it('should return a functional CircuitBreaker', async () => {

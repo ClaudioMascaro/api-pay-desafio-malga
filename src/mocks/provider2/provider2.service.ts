@@ -1,56 +1,114 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
-  CreatePaymentDto,
-  CreatePaymentResponse,
-} from './dto/create-payment.dto';
+  CreateTransactionDto,
+  TransactionResponse,
+  RefundTransactionDto,
+} from './dto/transactions.dto';
 
 @Injectable()
 export class Provider2Service {
-  private payments: CreatePaymentResponse[] = [];
+  private transactions: TransactionResponse[] = [];
 
-  async processPayment(
-    createPaymentDto: CreatePaymentDto,
-  ): Promise<CreatePaymentResponse> {
+  async createTransaction(
+    createTransactionDto: CreateTransactionDto,
+  ): Promise<TransactionResponse> {
     const timeout =
       Math.random() < 0.05 ? 1200 : Math.floor(Math.random() * 500);
     await new Promise((resolve) => setTimeout(resolve, timeout));
 
     if (Math.random() < 0.005) {
-      throw new InternalServerErrorException('Provider 2 indisponível.');
+      throw new InternalServerErrorException();
     }
-    if (createPaymentDto.amount === 777) {
-      const response: CreatePaymentResponse = {
+    if (createTransactionDto.amount === 777) {
+      const response: TransactionResponse = {
         id: randomUUID(),
         date: new Date().toISOString(),
         status: 'failed',
-        amount: createPaymentDto.amount,
-        originalAmount: createPaymentDto.amount,
-        currency: createPaymentDto.currency,
-        statementDescriptor: createPaymentDto.statementDescriptor,
+        amount: createTransactionDto.amount,
+        originalAmount: createTransactionDto.amount,
+        currency: createTransactionDto.currency,
+        statementDescriptor: createTransactionDto.statementDescriptor,
         paymentType: 'card',
         cardId: randomUUID(),
       };
 
-      this.payments.push(response);
+      this.transactions.push(response);
 
       return response;
     }
 
-    const response: CreatePaymentResponse = {
+    const response: TransactionResponse = {
       id: randomUUID(),
       date: new Date().toISOString(),
       status: 'paid',
-      amount: createPaymentDto.amount,
-      originalAmount: createPaymentDto.amount,
-      currency: createPaymentDto.currency,
-      statementDescriptor: createPaymentDto.statementDescriptor,
+      amount: createTransactionDto.amount,
+      originalAmount: createTransactionDto.amount,
+      currency: createTransactionDto.currency,
+      statementDescriptor: createTransactionDto.statementDescriptor,
       paymentType: 'card',
       cardId: randomUUID(),
     };
 
-    this.payments.push(response);
+    this.transactions.push(response);
 
     return response;
+  }
+
+  async getTransaction(id: string): Promise<TransactionResponse> {
+    const transaction = this.transactions.find((t) => t.id === id);
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    return transaction;
+  }
+
+  async refundTransaction(
+    transactionId: string,
+    { amount }: RefundTransactionDto,
+  ): Promise<TransactionResponse> {
+    const transaction = this.transactions.find((t) => t.id === transactionId);
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found.');
+    }
+
+    if (transaction.status !== 'paid') {
+      throw new BadRequestException('Transaction cannot be voided.');
+    }
+
+    if (amount > transaction.amount) {
+      throw new BadRequestException(
+        'Void amount is higher than transaction amount.',
+      );
+    }
+
+    const refund: TransactionResponse = {
+      id: transaction.id,
+      date: transaction.date,
+      status: 'voided',
+      amount: amount,
+      originalAmount: transaction.originalAmount,
+      currency: transaction.currency,
+      statementDescriptor: transaction.statementDescriptor,
+      paymentType: transaction.paymentType,
+      cardId: transaction.cardId,
+    };
+
+    this.updateTransaction(refund);
+
+    return refund;
+  }
+
+  private async updateTransaction(transaction: TransactionResponse) {
+    const index = this.transactions.findIndex((t) => t.id === transaction.id);
+    this.transactions[index] = transaction;
   }
 }

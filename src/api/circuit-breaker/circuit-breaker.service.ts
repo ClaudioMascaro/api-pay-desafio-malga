@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import CircuitBreaker from 'opossum';
 
 @Injectable()
 export class CircuitBreakerService {
+  private readonly logger = new Logger(CircuitBreakerService.name);
   public resetTimeout: number;
 
   constructor(private readonly configService: ConfigService) {
@@ -26,15 +27,15 @@ export class CircuitBreakerService {
     const breaker = new CircuitBreaker(requestFn, options);
 
     breaker.on('open', () => {
-      console.warn('Circuit open - blocking new calls.');
+      this.logger.warn('Circuit open - calls are blocked.');
     });
 
     breaker.on('close', () => {
-      console.info('Circuit closed - calls allowed.');
+      this.logger.log('Circuit closed - calls are allowed.');
     });
 
     breaker.on('halfOpen', () => {
-      console.info('Circuit in test - checking recovery.');
+      this.logger.log('Circuit half-open - testing if calls are allowed.');
     });
 
     return breaker;

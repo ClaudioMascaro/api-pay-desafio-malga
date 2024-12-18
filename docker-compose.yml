@@ -17,6 +17,8 @@ services:
       CIRCUIT_BREAKER_RESET_TIMEOUT: ${CIRCUIT_BREAKER_RESET_TIMEOUT}
       PAYMENTS_PROVIDER1_API_URL: http://api_pay_mocks:3001/mocks/provider1
       PAYMENTS_PROVIDER2_API_URL: http://api_pay_mocks:3001/mocks/provider2
+      PAYMENTS_MAX_RETRIES: ${PAYMENTS_MAX_RETRIES}
+      PAYMENTS_REQUEST_TIMEOUT: ${PAYMENTS_REQUEST_TIMEOUT}
     ports:
       - '3000:3000'
     depends_on:
@@ -29,3 +31,17 @@ services:
     command: sh -c "npm run start:mocks:dev"
     ports:
       - '3001:3001'
+
+  tests-all:
+    extends:
+      service: base
+    container_name: api_pay_tests
+    command: sh -c "npm run test:all:cov"
+    environment:
+      CIRCUIT_BREAKER_TIMEOUT: ${CIRCUIT_BREAKER_TIMEOUT}
+      CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE: ${CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE}
+      CIRCUIT_BREAKER_RESET_TIMEOUT: ${CIRCUIT_BREAKER_RESET_TIMEOUT}
+      PAYMENTS_PROVIDER1_API_URL: http://localhost:3001/mocks/provider1
+      PAYMENTS_PROVIDER2_API_URL: http://localhost:3001/mocks/provider2
+      PAYMENTS_MAX_RETRIES: ${PAYMENTS_MAX_RETRIES}
+      PAYMENTS_REQUEST_TIMEOUT: ${PAYMENTS_REQUEST_TIMEOUT}

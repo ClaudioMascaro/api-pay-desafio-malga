@@ -18,7 +18,7 @@ export type Provider2CreatePaymentDto = z.infer<
   typeof Provider2CreatePaymentSchema
 >;
 
-export type Provider2CreatePaymentResponse = {
+export type Provider2PaymentResponse = {
   id: string;
   date: string;
   status: 'paid' | 'failed' | 'voided';

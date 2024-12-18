@@ -1,5 +1,4 @@
 import { z } from 'zod';
-
 import currencyCodes from 'currency-codes';
 
 const currencyEnum = currencyCodes.codes() as [string, ...string[]];
@@ -11,9 +10,9 @@ export const CreatePaymentSchema = z.object({
   paymentMethod: z.object({
     type: z.enum(['card']),
     card: z.object({
-      number: z.string().regex(/^[0-9]{16}$/, 'Invalid card number'),
+      number: z.string().regex(/^\d{16}$/, 'Invalid card number'),
       holderName: z.string().min(1, 'Card holder name is required'),
-      cvv: z.string().regex(/^[0-9]{3}$/, 'Invalid CVV'),
+      cvv: z.string().regex(/^\d{3}$/, 'Invalid CVV'),
       expirationDate: z
         .string()
         .regex(/^\d{2}\/\d{4}$/, 'Invalid expiration date'),
@@ -24,12 +23,20 @@ export const CreatePaymentSchema = z.object({
 
 export type CreatePaymentDto = z.infer<typeof CreatePaymentSchema>;
 
-export type CreatePaymentResponse = {
+export const RefundPaymentSchema = z.object({
+  amount: z.number().positive(),
+});
+
+export type RefundPaymentDto = z.infer<typeof RefundPaymentSchema>;
+
+export type PaymentStatus = 'success' | 'refused' | 'refunded';
+
+export type PaymentResponse = {
   id: string;
-  createdAt: string;
-  status: 'authorized' | 'failed' | 'refunded';
+  createdDate: string;
+  status: PaymentStatus;
+  amount: number;
   originalAmount: number;
-  currentAmount: number;
   currency: string;
   description: string;
   paymentMethod: 'card';
