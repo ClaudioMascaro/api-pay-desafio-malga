@@ -6,13 +6,13 @@ import {
 } from './dto/create-payment.dto';
 import { ZodValidationPipe } from '../../common/validation/pipeline.validation';
 
-@Controller('provider1')
+@Controller('provider2')
 export class Provider2Controller {
-  constructor(private readonly provider1Service: Provider2Service) {}
+  constructor(private readonly provider2Service: Provider2Service) {}
 
   @Post('transactions')
   @UsePipes(new ZodValidationPipe(CreatePaymentSchema))
   async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.provider1Service.processPayment(createPaymentDto);
+    return this.provider2Service.processPayment(createPaymentDto);
   }
 }

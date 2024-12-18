@@ -1,8 +1,11 @@
 import { z } from 'zod';
+import currencyCodes from 'currency-codes';
+
+const currencyEnum = currencyCodes.codes() as [string, ...string[]];
 
 export const CreatePaymentSchema = z.object({
   amount: z.number().positive(),
-  currency: z.string().length(3),
+  currency: z.enum(currencyEnum),
   description: z.string().max(255),
   paymentMethod: z.object({
     type: z.enum(['card']),
@@ -20,10 +23,12 @@ export const CreatePaymentSchema = z.object({
 
 export type CreatePaymentDto = z.infer<typeof CreatePaymentSchema>;
 
+export type PaymentStatus = 'success' | 'refused' | 'refunded';
+
 export type CreatePaymentResponse = {
   id: string;
   createdDate: string;
-  status: 'success' | 'failed' | 'refunded';
+  status: PaymentStatus;
   amount: number;
   originalAmount: number;
   currency: string;

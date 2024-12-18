@@ -9,9 +9,15 @@ import {
 export class Provider2Service {
   private payments: CreatePaymentResponse[] = [];
 
-  processPayment(createPaymentDto: CreatePaymentDto): CreatePaymentResponse {
-    if (Math.random() < 0.2) {
-      throw new InternalServerErrorException('Provider 1 indisponível.');
+  async processPayment(
+    createPaymentDto: CreatePaymentDto,
+  ): Promise<CreatePaymentResponse> {
+    const timeout =
+      Math.random() < 0.05 ? 1200 : Math.floor(Math.random() * 500);
+    await new Promise((resolve) => setTimeout(resolve, timeout));
+
+    if (Math.random() < 0.005) {
+      throw new InternalServerErrorException('Provider 2 indisponível.');
     }
     if (createPaymentDto.amount === 777) {
       const response: CreatePaymentResponse = {

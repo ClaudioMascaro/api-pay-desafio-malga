@@ -5,6 +5,7 @@ import { CircuitBreakerService } from '../../circuit-breaker/circuit-breaker.ser
 import {
   CreatePaymentDto,
   CreatePaymentResponse,
+  PaymentStatus,
 } from '../dto/create-payment.dto';
 import {
   Provider2CreatePaymentDto,
@@ -12,18 +13,55 @@ import {
 } from './dto/provider2.dto';
 import { lastValueFrom } from 'rxjs';
 import PaymentProviderStrategy from './payment-provider.interface';
+import CircuitBreaker from 'opossum';
 
 @Injectable()
 export class Provider2Strategy implements PaymentProviderStrategy {
+  private readonly logger = new Logger(Provider2Strategy.name);
+  private circuitBreaker: CircuitBreaker<
+    [CreatePaymentDto],
+    CreatePaymentResponse
+  >;
+
+  private statusDictionary: { [key: string]: PaymentStatus } = {
+    paid: 'success',
+    failed: 'refused',
+    voided: 'refunded',
+  };
+
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
-  ) {}
+    private readonly circuitBreakerService: CircuitBreakerService,
+  ) {
+    this.circuitBreaker = this.circuitBreakerService.createCircuitBreaker<
+      [CreatePaymentDto],
+      CreatePaymentResponse
+    >(async (dto) => this.executeRequest(dto));
+  }
 
   async processPayment(
     createPaymentDto: CreatePaymentDto,
   ): Promise<CreatePaymentResponse> {
+    try {
+      return await this.circuitBreaker.fire(createPaymentDto);
+    } catch (error) {
+      this.logger.error(`Erro no Provider2Strategy: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private async executeRequest(
+    createPaymentDto: CreatePaymentDto,
+  ): Promise<CreatePaymentResponse> {
     const apiUrl = this.configService.get<string>('payments.provider2.apiUrl');
+
+    const expirationArr =
+      createPaymentDto.paymentMethod.card.expirationDate.split('/');
+
+    const expirationMonth = expirationArr[0];
+    const expirationYear = expirationArr[1].slice(-2);
+
     const provider2CreatePaymentDto: Provider2CreatePaymentDto = {
       amount: createPaymentDto.amount,
       currency: createPaymentDto.currency,
@@ -33,23 +71,29 @@ export class Provider2Strategy implements PaymentProviderStrategy {
         number: createPaymentDto.paymentMethod.card.number,
         holder: createPaymentDto.paymentMethod.card.holderName,
         cvv: createPaymentDto.paymentMethod.card.cvv,
-        expiration: createPaymentDto.paymentMethod.card.expirationDate,
+        expiration: `${expirationMonth}/${expirationYear}`,
         installmentNumber: createPaymentDto.paymentMethod.card.installments,
       },
     };
 
-    const { data } = await lastValueFrom(
+    const response = await lastValueFrom(
       this.httpService.post<Provider2CreatePaymentResponse>(
         apiUrl + '/transactions',
         provider2CreatePaymentDto,
-        { timeout: 5000 },
+        { timeout: 1000 },
       ),
     );
+
+    if (response.status >= 500) {
+      throw new Error('Erro ao processar pagamento');
+    }
+
+    const { data } = response;
 
     return {
       id: data.id,
       createdDate: data.date,
-      status: 'success',
+      status: this.statusDictionary[data.status],
       amount: data.amount,
       originalAmount: data.originalAmount,
       currency: data.currency,

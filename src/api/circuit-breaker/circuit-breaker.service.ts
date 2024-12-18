@@ -4,13 +4,19 @@ import CircuitBreaker from 'opossum';
 
 @Injectable()
 export class CircuitBreakerService {
-  constructor(private readonly configService: ConfigService) {}
+  public resetTimeout: number;
+
+  constructor(private readonly configService: ConfigService) {
+    this.resetTimeout = this.configService.get<number>(
+      'circuitBreaker.resetTimeout',
+    );
+  }
 
   createCircuitBreaker<Input extends unknown[], Output>(
     requestFn: (...input: Input) => Promise<Output>,
   ): CircuitBreaker<Input, Output> {
     const options = {
-      timeout: this.configService.get<number>('circuitBreaker.timeout'),
+      timeout: this.resetTimeout,
       errorThresholdPercentage: this.configService.get<number>(
         'circuitBreaker.errorThresholdPercentage',
       ),

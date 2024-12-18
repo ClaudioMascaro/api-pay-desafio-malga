@@ -9,8 +9,14 @@ import { randomUUID } from 'crypto';
 export class Provider1Service {
   private payments: CreatePaymentResponse[] = [];
 
-  processPayment(createPaymentDto: CreatePaymentDto): CreatePaymentResponse {
-    if (Math.random() < 0.2) {
+  async processPayment(
+    createPaymentDto: CreatePaymentDto,
+  ): Promise<CreatePaymentResponse> {
+    const timeout =
+      Math.random() < 0.1 ? 1200 : Math.floor(Math.random() * 500);
+    await new Promise((resolve) => setTimeout(resolve, timeout));
+
+    if (Math.random() < 0.01) {
       throw new Error('Provider 1 indisponível.');
     }
     if (createPaymentDto.amount === 777) {
@@ -32,7 +38,7 @@ export class Provider1Service {
     }
 
     const response: CreatePaymentResponse = {
-      id: 'uuid',
+      id: randomUUID(),
       createdAt: new Date().toISOString(),
       status: 'authorized',
       originalAmount: createPaymentDto.amount,

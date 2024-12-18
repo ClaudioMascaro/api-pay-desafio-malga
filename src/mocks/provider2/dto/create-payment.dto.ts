@@ -1,8 +1,11 @@
 import { z } from 'zod';
+import currencyCodes from 'currency-codes';
+
+const currencyEnum = currencyCodes.codes() as [string, ...string[]];
 
 export const CreatePaymentSchema = z.object({
   amount: z.number().positive(),
-  currency: z.string().length(3),
+  currency: z.enum(currencyEnum),
   statementDescriptor: z.string().max(255),
   paymentType: z.enum(['card']),
   card: z.object({

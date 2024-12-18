@@ -1,5 +1,5 @@
 import { Body, Controller, Post, UsePipes, Version } from '@nestjs/common';
-import { ZodValidationPipe } from 'src/common/validation/pipeline.validation';
+import { ZodValidationPipe } from '../../common/validation/pipeline.validation';
 import { PaymentsService } from './payments.service';
 import {
   CreatePaymentDto,
