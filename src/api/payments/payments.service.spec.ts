@@ -74,7 +74,7 @@ describe('PaymentsService', () => {
     circuitBreakerService = module.get(CircuitBreakerService);
   });
 
-  it('deve processar o pagamento com o Provider1Strategy com sucesso', async () => {
+  it('should process the payment with Provider1Strategy successfully', async () => {
     provider1Strategy.processPayment.mockResolvedValue(
       mockCreatePaymentResponse,
     );
@@ -87,7 +87,7 @@ describe('PaymentsService', () => {
     expect(result).toEqual(mockCreatePaymentResponse);
   });
 
-  it('deve tentar o Provider2Strategy se o Provider1Strategy falhar', async () => {
+  it('should try Provider2Strategy if Provider1Strategy fails', async () => {
     provider1Strategy.processPayment.mockRejectedValue(
       new Error('Provider1 error'),
     );
@@ -106,7 +106,7 @@ describe('PaymentsService', () => {
     expect(result).toEqual(mockCreatePaymentResponse);
   });
 
-  it('deve reexecutar a função se ambos os provedores falharem', async () => {
+  it('should retry the function if both providers fail', async () => {
     provider1Strategy.processPayment.mockRejectedValue(
       new Error('Provider1 error'),
     );

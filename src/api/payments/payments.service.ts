@@ -27,16 +27,16 @@ export class PaymentsService {
 
     for (const { name, strategy } of strategies) {
       try {
-        this.logger.log(`Tentando processar pagamento com ${name}`);
+        this.logger.log(`trying to process with ${name}`);
         return await strategy.processPayment(createPaymentDto);
       } catch (error) {
-        this.logger.warn(`Falha ao processar com ${name}: ${error.message}`);
-        continue; // Tenta o próximo provedor
+        this.logger.warn(`${name} failed: ${error.message}`);
+        continue;
       }
     }
 
     this.logger.error(
-      'Todos os provedores falharam, retentando após o circuit breaker reset',
+      'All payment providers failed. Retrying after reset timeout',
     );
 
     await new Promise((resolve) =>

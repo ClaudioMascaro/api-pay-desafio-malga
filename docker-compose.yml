@@ -1,22 +1,31 @@
 version: '3.8'
 
 services:
-  app:
+  base:
     build: .
+    volumes:
+      - .:/usr/src/app
+
+  app:
+    extends:
+      service: base
     container_name: api_pay
     command: sh -c "npm run start:dev"
     environment:
-    volumes:
-      - .:/usr/src/app
+      CIRCUIT_BREAKER_TIMEOUT: ${CIRCUIT_BREAKER_TIMEOUT}
+      CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE: ${CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE}
+      CIRCUIT_BREAKER_RESET_TIMEOUT: ${CIRCUIT_BREAKER_RESET_TIMEOUT}
+      PAYMENTS_PROVIDER1_API_URL: http://api_pay_mocks:3001/mocks/provider1
+      PAYMENTS_PROVIDER2_API_URL: http://api_pay_mocks:3001/mocks/provider2
     ports:
       - '3000:3000'
+    depends_on:
+      - mocks
 
   mocks:
-    build: ./mocks
-    container_name: mocks
-    command: sh -c "npm run start:dev"
-    environment:
-    volumes:
-      - ./mocks:/usr/src/app
+    extends:
+      service: base
+    container_name: api_pay_mocks
+    command: sh -c "npm run start:mocks:dev"
     ports:
       - '3001:3001'

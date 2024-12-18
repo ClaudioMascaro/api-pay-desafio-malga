@@ -16,27 +16,25 @@ export class CircuitBreakerService {
     requestFn: (...input: Input) => Promise<Output>,
   ): CircuitBreaker<Input, Output> {
     const options = {
-      timeout: this.resetTimeout,
+      timeout: this.configService.get<number>('circuitBreaker.timeout'),
       errorThresholdPercentage: this.configService.get<number>(
         'circuitBreaker.errorThresholdPercentage',
       ),
-      resetTimeout: this.configService.get<number>(
-        'circuitBreaker.resetTimeout',
-      ),
+      resetTimeout: this.resetTimeout,
     };
 
     const breaker = new CircuitBreaker(requestFn, options);
 
     breaker.on('open', () => {
-      console.warn('Circuito aberto - bloqueando novas chamadas.');
+      console.warn('Circuit open - blocking new calls.');
     });
 
     breaker.on('close', () => {
-      console.info('Circuito fechado - chamadas liberadas.');
+      console.info('Circuit closed - calls allowed.');
     });
 
     breaker.on('halfOpen', () => {
-      console.info('Circuito em teste - verificando recuperação.');
+      console.info('Circuit in test - checking recovery.');
     });
 
     return breaker;

@@ -9,5 +9,4 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage/e2e',
   testEnvironment: 'node',
-  testTimeout: 30000,
 };

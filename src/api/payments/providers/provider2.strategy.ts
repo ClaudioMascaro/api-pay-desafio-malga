@@ -46,7 +46,7 @@ export class Provider2Strategy implements PaymentProviderStrategy {
     try {
       return await this.circuitBreaker.fire(createPaymentDto);
     } catch (error) {
-      this.logger.error(`Erro no Provider2Strategy: ${error.message}`);
+      this.logger.error(`Provider 2 failed: ${error.message}`);
       throw error;
     }
   }
@@ -85,7 +85,7 @@ export class Provider2Strategy implements PaymentProviderStrategy {
     );
 
     if (response.status >= 500) {
-      throw new Error('Erro ao processar pagamento');
+      throw new Error('error processing payment');
     }
 
     const { data } = response;

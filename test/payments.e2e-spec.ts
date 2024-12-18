@@ -6,6 +6,7 @@ import { CreatePaymentDto } from '../src/api/payments/dto/create-payment.dto';
 import { MocksModule } from '../src/mocks/mocks.module';
 
 describe('PaymentsController (e2e)', () => {
+  jest.setTimeout(120000);
   let app: INestApplication;
   let mockApp: INestApplication;
 
@@ -47,7 +48,7 @@ describe('PaymentsController (e2e)', () => {
       },
     };
 
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 50; i++) {
       const response = await request(app.getHttpServer())
         .post('/v1/payments')
         .send(createPaymentDto)

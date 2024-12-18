@@ -55,7 +55,7 @@ describe('Provider2Strategy', () => {
     provider: 'provider2',
   };
 
-  describe('Quando o pagamento é processado com sucesso', () => {
+  describe('When the payment is processed successfully', () => {
     const configService = {
       get: jest.fn().mockReturnValue('http://mock-provider2-api'),
     } as unknown as jest.Mocked<ConfigService>;
@@ -92,7 +92,7 @@ describe('Provider2Strategy', () => {
       provider2Strategy = module.get<Provider2Strategy>(Provider2Strategy);
     });
 
-    it('deve retornar a resposta esperada', async () => {
+    it('should return the expected response', async () => {
       const result =
         await provider2Strategy.processPayment(mockCreatePaymentDto);
 
@@ -120,7 +120,7 @@ describe('Provider2Strategy', () => {
     });
   });
 
-  describe('Quando o Circuit Breaker está aberto', () => {
+  describe('When the Circuit Breaker is open', () => {
     const configService = {
       get: jest.fn().mockReturnValue('http://mock-provider2-api'),
     } as unknown as jest.Mocked<ConfigService>;
@@ -149,7 +149,7 @@ describe('Provider2Strategy', () => {
       provider2Strategy = module.get<Provider2Strategy>(Provider2Strategy);
     });
 
-    it('deve lançar um erro indicando que o Circuit Breaker está aberto', async () => {
+    it('should throw an error indicating that the Circuit Breaker is open', async () => {
       await expect(
         provider2Strategy.processPayment(mockCreatePaymentDto),
       ).rejects.toThrow('Circuit Breaker Open');
@@ -158,7 +158,7 @@ describe('Provider2Strategy', () => {
     });
   });
 
-  describe('Quando a requisição ao provedor falha', () => {
+  describe('When the request to the provider fails', () => {
     const configService = {
       get: jest.fn().mockReturnValue('http://mock-provider2-api'),
     } as unknown as jest.Mocked<ConfigService>;
@@ -195,7 +195,7 @@ describe('Provider2Strategy', () => {
       provider2Strategy = module.get<Provider2Strategy>(Provider2Strategy);
     });
 
-    it('deve lançar um erro ao processar o pagamento', async () => {
+    it('should throw an error when processing the payment', async () => {
       await expect(
         provider2Strategy.processPayment(mockCreatePaymentDto),
       ).rejects.toThrow();
