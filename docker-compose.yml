@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: api_pay
+    command: sh -c "npm run start:dev"
+    environment:
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - '3000:3000'
+
+  mocks:
+    build: ./mocks
+    container_name: mocks
+    command: sh -c "npm run start:dev"
+    environment:
+    volumes:
+      - ./mocks:/usr/src/app
+    ports:
+      - '3001:3001'
