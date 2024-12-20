@@ -2,7 +2,7 @@
 
 API Pay é uma aplicação NestJS que processar pagamentos utilizando múltiplos provedores e conta com fallback e circuit breaker. Esta aplicação foi desenvolvida como parte de um desafio técnico, e seu objetivo é demonstrar a implementação de estratégias de resiliência e tolerância a falhas em sistemas de pagamentos distribuídos.
 
-Utilizando o padrão de design **Strategy**, a aplicação pode alternar dinamicamente entre diferentes provedores de pagamento em caso de falha.
+Utilizando o design pattern **Strategy**, a aplicação pode alternar dinamicamente entre diferentes provedores de pagamento em caso de falha.
 
 Além disso, o uso de **Circuit Breaker** ajuda a prevenir a sobrecarga de provedores que estão enfrentando problemas, bloqueando temporariamente novas chamadas e permitindo uma recuperação gradual.
 
@@ -23,7 +23,7 @@ Certifique-se de ter as seguintes ferramentas instaladas no seu ambiente:
 1. **Clone o repositório:**
 
    ```bash
-   git clone https://github.com/seu-repositorio/api-pay-desafio-malga.git
+   git clone https://github.com/ClaudioMascaro/api-pay-desafio-malga.git
    cd api-pay-desafio-malga
    ```
 
@@ -38,20 +38,6 @@ Certifique-se de ter as seguintes ferramentas instaladas no seu ambiente:
    ```bash
    npm install
    ```
-
----
-
-## Variáveis de Ambiente
-
-Para configurar a aplicação, você pode ajustar as seguintes variáveis de ambiente no arquivo `.env`:
-
-- `CIRCUIT_BREAKER_TIMEOUT` - Tempo limite para o circuit breaker em ms.
-- `CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE` - Percentual de erro para abrir o circuit breaker.
-- `CIRCUIT_BREAKER_RESET_TIMEOUT` - Tempo para resetar o circuit breaker.
-- `PAYMENTS_PROVIDER1_API_URL` - URL do provedor de pagamento 1.
-- `PAYMENTS_PROVIDER2_API_URL` - URL do provedor de pagamento 2.
-- `PAYMENTS_MAX_RETRIES` - Número máximo de tentativas de fallback.
-- `PAYMENTS_REQUEST_TIMEOUT` - Tempo limite para requests aos provedores externos, em ms.
 
 ---
 
@@ -281,6 +267,8 @@ npm run test:e2e
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | ![Statements](https://img.shields.io/badge/statements-100%25-brightgreen.svg?style=flat) | ![Branches](https://img.shields.io/badge/branches-100%25-brightgreen.svg?style=flat) | ![Functions](https://img.shields.io/badge/functions-100%25-brightgreen.svg?style=flat) | ![lines](https://img.shields.io/badge/lines-100%25-brightgreen.svg?style=flat) |
 
+![Screenshot from 2024-12-20 12-45-40](https://github.com/user-attachments/assets/cc9af20b-3185-40b4-8d71-dce5d6ab1270)
+
 ---
 
 ## Principais Diretórios
@@ -290,5 +278,19 @@ npm run test:e2e
   - **`mocks/`** - Simulação dos provedores de pagamento.
   - **`common/`** - Middleware, validações e utilitários globais.
 - **`test/`** - Configuração e arquivos de teste end-to-end.
+
+---
+
+## Variáveis de Ambiente
+
+Para personalizar os parâmetros e configurações da aplicação, é possível ajustar as seguintes variáveis de ambiente no arquivo `.env`:
+
+- `CIRCUIT_BREAKER_TIMEOUT` - Tempo limite para o circuit breaker em ms.
+- `CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE` - Percentual de erro para abrir o circuit breaker.
+- `CIRCUIT_BREAKER_RESET_TIMEOUT` - Tempo para resetar o circuit breaker.
+- `PAYMENTS_PROVIDER1_API_URL` - URL do provedor de pagamento 1.
+- `PAYMENTS_PROVIDER2_API_URL` - URL do provedor de pagamento 2.
+- `PAYMENTS_MAX_RETRIES` - Número máximo de tentativas de fallback.
+- `PAYMENTS_REQUEST_TIMEOUT` - Tempo limite para requests aos provedores externos, em ms.
 
 ---
